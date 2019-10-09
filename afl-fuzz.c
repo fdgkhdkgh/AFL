@@ -1161,7 +1161,7 @@ static inline void classify_counts(u64* mem) {
   while (i--) {
 
     /* Optimize for sparse bitmaps. */
-
+    //因為是一列列去做設定，所以對於sparse圖來說效率較高
     if (unlikely(*mem)) {
 
       u16* mem16 = (u16*)mem;
@@ -1986,6 +1986,18 @@ static void destroy_extras(void) {
 
 EXP_ST void init_forkserver(char** argv) {
 
+
+  printf("fdgkhdkgh debug info : init the fork server\n");
+
+  printf("fdgkhdkgh debug info : init the fork server : argv->\n");
+  for(int i=0;;i++){
+    if(argv[i]==0) break;
+    printf("%d %s\n", i, argv[i]);
+  }
+
+
+
+
   static struct itimerval it;
   int st_pipe[2], ctl_pipe[2];
   int status;
@@ -2324,9 +2336,11 @@ static u8 run_target(char** argv, u32 timeout) {
 
       /* Isolate the process and configure standard descriptors. If out_file is
          specified, stdin is /dev/null; otherwise, out_fd is cloned instead. */
-
+      //?????
       setsid();
 
+      //把子行程的輸出通通導向null
+      //假如程式的輸入是來自檔案，就把stdin砍掉
       dup2(dev_null_fd, 1);
       dup2(dev_null_fd, 2);
 
@@ -2375,7 +2389,7 @@ static u8 run_target(char** argv, u32 timeout) {
 
     /* In non-dumb mode, we have the fork server up and running, so simply
        tell it to have at it, and then read back PID. */
-
+    //給prev_timed_out是什麼意思?
     if ((res = write(fsrv_ctl_fd, &prev_timed_out, 4)) != 4) {
 
       if (stop_soon) return 0;
@@ -2395,10 +2409,14 @@ static u8 run_target(char** argv, u32 timeout) {
   }
 
   /* Configure timeout, as requested by user, then wait for child to terminate. */
-
+  
+  //1 second = 10^6 microsecond
+  //it.it_value.tv_sec  --> second
+  //it.it_value.tv_usec --> microsecond
   it.it_value.tv_sec = (timeout / 1000);
   it.it_value.tv_usec = (timeout % 1000) * 1000;
 
+  //超過時間就算timeout，沒超過時間也可以把程式的執行時間記錄下來
   setitimer(ITIMER_REAL, &it, NULL);
 
   /* The SIGALRM handler simply kills the child_pid and sets child_timed_out. */
@@ -2411,6 +2429,8 @@ static u8 run_target(char** argv, u32 timeout) {
 
     s32 res;
 
+    //要注意到read是同步的(寫端要寫完，讀端才能繼續動作)，所以我猜這裏要child process掛掉才會收到資料
+    //並且收到資料後緊接著getitimer()拿到計時器，並算出執行時間(exec_ms)
     if ((res = read(fsrv_st_fd, &status, 4)) != 4) {
 
       if (stop_soon) return 0;
@@ -2423,6 +2443,8 @@ static u8 run_target(char** argv, u32 timeout) {
   if (!WIFSTOPPED(status)) child_pid = 0;
 
   getitimer(ITIMER_REAL, &it);
+  //1 second = 1000 millisecond
+  //exec_ms (millisecond)
   exec_ms = (u64) timeout - (it.it_value.tv_sec * 1000 +
                              it.it_value.tv_usec / 1000);
 
@@ -2436,9 +2458,10 @@ static u8 run_target(char** argv, u32 timeout) {
   /* Any subsequent operations on trace_bits must not be moved by the
      compiler below this point. Past this location, trace_bits[] behave
      very normally and do not have to be treated as volatile. */
-
+  //不太懂這可以幹嘛
   MEM_BARRIER();
 
+  //shared memory with instrumented program
   tb4 = *(u32*)trace_bits;
 
 #ifdef __x86_64__
@@ -7382,6 +7405,9 @@ static void check_cpu_governor(void) {
 
 static void get_core_count(void) {
 
+
+  printf("fdgkhdkgh get cpu count\n");
+
   u32 cur_runnable = 0;
 
 #if defined(__APPLE__) || defined(__FreeBSD__) || defined (__OpenBSD__)
@@ -7395,11 +7421,15 @@ static void get_core_count(void) {
   if (sysctlbyname("hw.logicalcpu", &cpu_core_count, &s, NULL, 0) < 0)
     return;
 
+  printf("fdgkhdkgh get cpu count : apple\n");
+
 #else
 
   int s_name[2] = { CTL_HW, HW_NCPU };
 
   if (sysctl(s_name, 2, &cpu_core_count, &s, NULL, 0) < 0) return;
+
+  printf("fdgkhdkgh get cpu count : non apple\n");
 
 #endif /* ^__APPLE__ */
 
@@ -7407,15 +7437,20 @@ static void get_core_count(void) {
 
 #ifdef HAVE_AFFINITY
 
+  printf("fdgkhdkgh get cpu count : have affinity\n");
+
   cpu_core_count = sysconf(_SC_NPROCESSORS_ONLN);
 
 #else
+
+  printf("fdgkhdkgh get cpu count : non have affinity\n");
 
   FILE* f = fopen("/proc/stat", "r");
   u8 tmp[1024];
 
   if (!f) return;
 
+  //一次讀取 1024 bytes
   while (fgets(tmp, sizeof(tmp), f))
     if (!strncmp(tmp, "cpu", 3) && isdigit(tmp[3])) cpu_core_count++;
 

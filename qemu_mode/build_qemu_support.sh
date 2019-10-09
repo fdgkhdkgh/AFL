@@ -145,9 +145,22 @@ echo "[+] Patching done."
 # --enable-pie seems to give a couple of exec's a second performance
 # improvement, much to my surprise. Not sure how universal this is..
 
+# 可能就是選定編譯的功能吧，看想要什麼功能，再編譯進去
+# --enable-linux-user : enable all linux usermode emulation targets
+# --disable-system    : disable all system emulation targets
+# --disable-gtk       : disable gtk UI
+# --disable-sdl       : disable SDL
+# --disable-vnc       : disable VNC
+# --target-list       :
+# --enable-pie        : 
+# --enable-kvm        :
+
+#-ggdb                : Produce debugging information for use by GDB.  This means to use the most expressive format available (DWARF, stabs, or the native format if neither of those are supported), including GDB extensions if at all possible.
+
 CFLAGS="-O3 -ggdb" ./configure --disable-system \
   --enable-linux-user --disable-gtk --disable-sdl --disable-vnc \
   --target-list="${CPU_TARGET}-linux-user" --enable-pie --enable-kvm || exit 1
+
 
 echo "[+] Configuration complete."
 
