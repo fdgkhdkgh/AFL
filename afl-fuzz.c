@@ -1371,7 +1371,7 @@ EXP_ST void setup_shm(void) {
      we don't want them to detect instrumentation, since we won't be sending
      fork server commands. This should be replaced with better auto-detection
      later on, perhaps? */
-
+  /* 利用環境變數，把shm_id傳給child process，希望在fork且execve之後也可以拿到同樣的shm_id */
   if (!dumb_mode) setenv(SHM_ENV_VAR, shm_str, 1);
 
   ck_free(shm_str);

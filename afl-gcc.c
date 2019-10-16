@@ -214,6 +214,9 @@ static void edit_params(u32 argc, char** argv) {
 
   }
 
+  /* -B 有設定的話，就會先從設定的路徑開始尋找
+   　這裡將afl-as.c編譯完成後，就會建立軟連結，把as連接到afl-as
+     於是gcc就會使用afl版本的as */
   cc_params[cc_par_cnt++] = "-B";
   cc_params[cc_par_cnt++] = as_path;
 
@@ -337,6 +340,7 @@ int main(int argc, char** argv) {
 
   edit_params(argc, argv);
 
+  printf(" fdgkhdkgh debug info : cc_params[0] is %s\n", cc_params[0]);
   execvp(cc_params[0], (char**)cc_params);
 
   FATAL("Oops, failed to execute '%s' - check your PATH", cc_params[0]);

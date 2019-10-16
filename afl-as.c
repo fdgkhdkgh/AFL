@@ -236,6 +236,8 @@ static void add_instrumentation(void) {
   u8  instr_ok = 0, skip_csect = 0, skip_next_label = 0,
       skip_intel = 0, skip_app = 0, instrument_next = 0;
 
+  printf("fdgkhdkgh debug info : input_file : %s \n", input_file);
+
 #ifdef __APPLE__
 
   u8* colon_pos;
@@ -373,6 +375,7 @@ static void add_instrumentation(void) {
 
       if (line[1] == 'j' && line[2] != 'm' && R(100) < inst_ratio) {
 
+        /* 就是在這裡進行插樁，似乎不會對單純的jmp進行插樁 */
         fprintf(outf, use_64bit ? trampoline_fmt_64 : trampoline_fmt_32,
                 R(MAP_SIZE));
 
@@ -475,6 +478,8 @@ static void add_instrumentation(void) {
 /* Main entry point */
 
 int main(int argc, char** argv) {
+
+  printf(" fdgkhdkgh debug info : get into afl-as\n");
 
   s32 pid;
   u32 rand_seed;
